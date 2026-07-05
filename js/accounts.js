@@ -31,6 +31,7 @@ async function loadAccounts(){
       <td>${a.seller_whatsapp?`<a class="btn secondary" target="_blank" href="${whatsappLink(a.seller_whatsapp)}">واتساب</a>`:''}</td>
       <td><span class="badge ${a.status}">${statusText(a.status)}</span></td>
       <td class="actions">
+      <a class="btn secondary" href="public-account.html?id=${a.id}" target="_blank">PDF</a>
         <a class="btn secondary" href="add-account.html?id=${a.id}" data-hide-viewer>تعديل</a>
         ${adminProfile?.role==='owner'?`<button class="btn danger" onclick="deleteAccount(${a.id})">حذف</button>`:''}
       </td>
