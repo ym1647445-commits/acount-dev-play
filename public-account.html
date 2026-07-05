@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>عرض الحساب - DevPlay Studio</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+</head>
+<body class="pdf-page">
+
+  <main class="pdf-card" id="pdfContent">
+    <div class="pdf-header">
+      <h1>DevPlay Studio</h1>
+      <p>عرض حساب لعبة للبيع</p>
+    </div>
+
+    <div id="accountView">جاري تحميل البيانات...</div>
+
+    <div class="pdf-footer">
+      <p>كل خدماتك الرقمية في مكان واحد 🎮💙</p>
+      <p>https://devplaystudio.com</p>
+    </div>
+  </main>
+
+  <div class="pdf-actions">
+    <button class="btn" onclick="window.print()">حفظ PDF / طباعة</button>
+  </div>
+
+  <script>
+    const id = new URLSearchParams(location.search).get('id');
+
+    async function loadPublicAccount() {
+      const box = document.getElementById('accountView');
+
+      const { data, error } = await db
+        .from('game_accounts')
+        .select('code, game, account_name, description, sell_price, price, status, images, created_at')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        box.innerHTML = '<p>لم يتم العثور على الحساب</p>';
+        return;
+      }
+
+      const price = data.sell_price || data.price || 0;
+
+      box.innerHTML = `
+        <div class="public-info">
+          <div><b>كود الحساب:</b> ${data.code || ''}</div>
+          <div><b>اللعبة:</b> ${data.game || ''}</div>
+          <div><b>اسم الحساب:</b> ${data.account_name || ''}</div>
+          <div><b>السعر:</b> ${price} جنيه</div>
+          <div><b>الحالة:</b> ${statusText(data.status)}</div>
+        </div>
+
+        <div class="public-desc">
+          <h3>الوصف</h3>
+          <p>${data.description || 'لا يوجد وصف'}</p>
+        </div>
+
+        <div class="public-images">
+          <h3>صور الحساب</h3>
+          ${
+            data.images && data.images.length
+            ? data.images.map(img => `<img src="${img}" alt="صورة الحساب">`).join('')
+            : '<p>لا توجد صور</p>'
+          }
+        </div>
+      `;
+    }
+
+    function statusText(status) {
+      if (status === 'available') return 'متاح';
+      if (status === 'reserved') return 'محجوز';
+      if (status === 'sold') return 'تم البيع';
+      return status || '';
+    }
+
+    loadPublicAccount();
+  </script>
+
+</body>
+</html>
