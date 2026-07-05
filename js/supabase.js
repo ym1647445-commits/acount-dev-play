@@ -5,9 +5,9 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const STORAGE_BUCKETS = {
-  accounts: "account-images",
-  sellers: "seller-documents",
-  pdfs: "sale-pdfs"
+  accounts: 'account-images',
+  documents: 'seller-documents',
+  pdfs: 'sale-pdfs'
 };
 
 async function getCurrentUser(){
