@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>عرض الحساب - DevPlay Studio</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+</head>
+<body class="pdf-page">
+  <main class="pdf-card">
+    <div class="pdf-header"><h1>DevPlay Studio</h1><p>عرض حساب لعبة للبيع</p></div>
+    <div id="accountView">جاري تحميل البيانات...</div>
+    <div class="pdf-footer"><p>كل خدماتك الرقمية في مكان واحد 🎮💙</p><p>https://devplaystudio.com</p></div>
+  </main>
+  <div class="pdf-actions"><button class="btn" onclick="window.print()">حفظ PDF / طباعة</button></div>
+<script>
+const id = new URLSearchParams(location.search).get('id');
+function cleanPath(value, bucket){
+  if(!value) return '';
+  let v = String(value);
+  const publicKey = `/storage/v1/object/public/${bucket}/`;
+  const signKey = `/storage/v1/object/sign/${bucket}/`;
+  if(v.includes(publicKey)) v = v.split(publicKey)[1];
+  if(v.includes(signKey)) v = v.split(signKey)[1].split('?')[0];
+  if(v.startsWith(bucket + '/')) v = v.replace(bucket + '/', '');
+  return v;
+}
+async function getFileUrl(bucket, value){
+  if(!value) return '';
+  if(String(value).startsWith('http')) return value;
+  const path = cleanPath(value, bucket);
+  const signed = await db.storage.from(bucket).createSignedUrl(path, 60*60);
+  if(!signed.error && signed.data?.signedUrl) return signed.data.signedUrl;
+  return db.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
+async function loadPublicAccount(){
+  const box = document.getElementById('accountView');
+  const { data, error } = await db.from('game_accounts')
+    .select('code, game, account_name, description, sell_price, price, status, images, video_url, created_at')
+    .eq('id', id).single();
+  if(error || !data){ box.innerHTML='<p>لم يتم العثور على الحساب</p>'; return; }
+  const price = data.sell_price || data.price || 0;
+  let videoHtml = '';
+  if(data.video_url){
+    const videoUrl = await getFileUrl(STORAGE_BUCKETS.videos || 'account-videos', data.video_url);
+    videoHtml = `<div class="public-video"><h3>فيديو الحساب</h3><video controls src="${videoUrl}"></video></div>`;
+  }
+  let imagesHtml = '<p>لا توجد صور</p>';
+  if(data.images && data.images.length){
+    const imgs = await Promise.all(data.images.map(async img=>{
+      const url = await getFileUrl(STORAGE_BUCKETS.accounts, img);
+      return `<div class="public-image-box"><img src="${url}" alt="صورة الحساب" onerror="this.parentElement.innerHTML='<p>تعذر تحميل الصورة</p>'"></div>`;
+    }));
+    imagesHtml = imgs.join('');
+  }
+  box.innerHTML = `<div class="public-info"><div><b>كود الحساب:</b> ${data.code||''}</div><div><b>اللعبة:</b> ${data.game||''}</div><div><b>اسم الحساب:</b> ${data.account_name||''}</div><div><b>السعر:</b> ${price} جنيه</div><div><b>الحالة:</b> ${statusText(data.status)}</div></div>${videoHtml}<div class="public-desc"><h3>الوصف</h3><p>${data.description||'لا يوجد وصف'}</p></div><div class="public-images"><h3>صور الحساب</h3>${imagesHtml}</div>`;
+}
+loadPublicAccount();
+</script>
+</body>
+</html>
